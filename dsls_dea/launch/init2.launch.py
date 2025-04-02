@@ -22,8 +22,8 @@ def generate_launch_description():
                                    'double_slung_load_point_mass',
                                    'double_slung_load_point_mass.sdf')
     uav_model_path = os.path.join(dsls_share_dir, 'models',
-                                   'px4vision_dsls',
-                                   'px4vision_dsls.sdf')
+                                   'px4vision_ancl',
+                                   'px4vision_ancl.sdf')
 
     # Create environment variables for Gazebo
     env_vars = [
@@ -48,7 +48,8 @@ def generate_launch_description():
         launch_arguments={
             'world': LaunchConfiguration('world'),
             'verbose': 'true',
-            'pause': 'true'  # Start paused
+            'pause': 'true',  # Start paused
+            'initial_sim_time': ''  # Start with initial sim time
         }.items()
     )
     gzclient = IncludeLaunchDescription(
@@ -72,8 +73,7 @@ def generate_launch_description():
             '-Y', '0.0'
         ],
         output='screen',
-        # Delay a bit so gzserver is ready
-        prefix="bash -c 'sleep 5; $0 $@'"
+        prefix="bash -c 'sleep 5; $0 $@'" # Delay a bit so gzserver is ready
     )
 
     px4_sitl_uav0 = ExecuteProcess(
@@ -81,8 +81,10 @@ def generate_launch_description():
                 HOME + '/PX4-Autopilot/build/px4_sitl_default/bin/px4',
                 HOME + '/PX4-Autopilot/ROMFS/px4fmu_common/',
                 '-s', HOME + '/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/rcS',
+                '-i', '0',
             ],
             cwd=PX4_RUN_DIR,
+            # cwd = os.path.join(PX4_RUN_DIR, "sitl_uav0"),
             shell=True,
             prefix="xterm -hold -e",
             output='screen'
@@ -107,17 +109,19 @@ def generate_launch_description():
         prefix="bash -c 'sleep 5; $0 $@'"
     )
 
-    # px4_sitl_uav1 = ExecuteProcess(
-    #      cmd=[
-    #             HOME + '/PX4-Autopilot/build/px4_sitl_default/bin/px4',
-    #             HOME + '/PX4-Autopilot/ROMFS/px4fmu_common/',
-    #             '-s', HOME + '/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/rcS',
-    #         ],
-    #         cwd=PX4_RUN_DIR,
-    #         shell=True,
-    #         prefix="xterm -hold -e",
-    #         output='screen'
-    # )
+    px4_sitl_uav1 = ExecuteProcess(
+         cmd=[
+                HOME + '/PX4-Autopilot/build/px4_sitl_default/bin/px4',
+                HOME + '/PX4-Autopilot/ROMFS/px4fmu_common/',
+                '-s', HOME + '/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/rcS',
+                '-i', '1',
+            ],
+            cwd=PX4_RUN_DIR,
+            # cwd = os.path.join(PX4_RUN_DIR, "sitl_uav1"),
+            shell=True,
+            prefix="xterm -hold -e",
+            output='screen'
+    )
 
     # --------------------------------------------------------------------
     # 3) Spawn the double slung load SDF
@@ -132,24 +136,20 @@ def generate_launch_description():
         prefix="bash -c 'sleep 5; $0 $@'"
     )
 
-    # But we need to declare the argument "dsl_sdf" first:
+    # declare the argument "dsl_sdf" first:
     dsl_sdf_arg = DeclareLaunchArgument(
         'dsl_sdf', default_value=load_model_path,
         description='Path to double slung load SDF'
     )
 
     # --------------------------------------------------------------------
-    # 4) Link attacher
-    # --------------------------------------------------------------------
-    # link_attacher = ExecuteProcess(
-    #     cmd=["ros2", "run", "gazebo_ros_link_attacher", "attach_sls"],
-    #     output="screen",
-    #     prefix="bash -c 'sleep 7; $0 $@'"
-    # )
-
     # Start Micro XRCE-DDS Agent for ROS2 <--> PX4 communication
-    xrce_dds_agent = ExecuteProcess(
+    xrce_dds_agent0 = ExecuteProcess(
             cmd=['MicroXRCEAgent', 'udp4', '-p', '8888'],
+            output='screen'
+    )
+    xrce_dds_agent1 = ExecuteProcess(
+            cmd=['MicroXRCEAgent', 'udp4', '-p', '8889'],
             output='screen'
     )
 
@@ -167,18 +167,16 @@ def generate_launch_description():
         gzserver,
         gzclient,
 
-        # SITLs
-        px4_sitl_uav0,
-        #px4_sitl_uav1,
-
-        # spawns
+        # UAV0
         spawn_uav0,
+        px4_sitl_uav0,
+        xrce_dds_agent0,
+
+        # UAV1
         spawn_uav1,
+        px4_sitl_uav1,
+        xrce_dds_agent1,
+
+        # load
         spawn_load,
-
-        # link_attacher
-        # link_attacher
-
-        # Micro XRCE-DDS Agent
-        xrce_dds_agent,
     ])

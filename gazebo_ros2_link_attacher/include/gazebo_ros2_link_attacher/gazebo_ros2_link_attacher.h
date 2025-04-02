@@ -18,7 +18,7 @@ class GazeboRosLinkAttacher : public WorldPlugin
 public:
   GazeboRosLinkAttacher();
   ~GazeboRosLinkAttacher();
-  void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf) override;
+  void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf) override; // must include when inheriting from WorldPlugin
 
 private:
   struct FixedJoint

@@ -8,13 +8,36 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(px4_msgs REQUIRED)
+find_package(px4_ros_com REQUIRED)
+find_package(gazebo_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+
+# add executables
+add_executable(dsls_dea_exe
+  src/main_node.cpp
+)
+
+ament_target_dependencies(dsls_dea_exe 
+  rclcpp 
+  px4_msgs 
+  gazebo_msgs 
+  geometry_msgs 
+  px4_ros_com
+)
+
+# find executables
+install(TARGETS dsls_dea_exe DESTINATION lib/${PROJECT_NAME})
 
 ############
 # Install ##
 ############
+# Export information to downstream packages
+ament_export_dependencies(ament_cmake rclcpp px4_msgs)
+
+# Install header files
+install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
+
 # Install launch files
 install(
   DIRECTORY launch 

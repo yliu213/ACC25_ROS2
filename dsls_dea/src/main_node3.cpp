@@ -191,9 +191,6 @@ public:
               result.successful = true;
               for (auto & param : params) {
                 if (param.get_name() == "mission_enabled_") {
-                    if(mission_enabled_){
-                        loadDSLSDEARef(); // load ref when quitting mission mode
-                    }
                     mission_enabled_ = param.as_bool();
                     RCLCPP_INFO(this->get_logger(), "Param changed: mission_enabled_=%s", mission_enabled_ ? "true" : "false");
                 } else if (param.get_name() == "norm_thrust_offset_"){
@@ -588,7 +585,8 @@ void DSLS_DEA::executeMission(void) {
                 q_1_3_r_ = 0.7406322196911044; 
                 q_2_1_r_ = 0;
                 q_2_2_r_ = -0.6717825272800765;
-                checkMissionStage(10);  
+                checkMissionStage(10);
+                break;  
             case 3: // Set-point 3
                 c_1_ = 0.0;
                 c_2_ = 0.0;

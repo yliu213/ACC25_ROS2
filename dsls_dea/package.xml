@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dsls_dea</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="yliu1300@gmail.com">yql</maintainer>
+  <license>Apache-2.0</license>
+
+  <!--build tools-->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!--for ros2 launch-->
+  <exec_depend>ros2launch</exec_depend> 
+
+  <!--for eigen lib-->
+  <build_depend>libeigen3-dev</build_depend>
+  <exec_depend>libeigen3-dev</exec_depend>
+
+  <!-- for pkg related -->
+  <depend>rclcpp</depend>
+  <depend>px4_msgs</depend>
+  <depend>gazebo_msgs</depend>
+  <depend>px4_ros_com</depend>
+  <depend>dsls_dea_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>  
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

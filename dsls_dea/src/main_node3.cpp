@@ -24,6 +24,7 @@
 #include "dsls_dea_msgs/msg/d_sls_state.hpp" // for custom msg
 #include "dsls_dea_msgs/msg/dea_state.hpp"
 #include "dsls_dea_msgs/msg/lpf_data.hpp"
+#include "dsls_dea_msgs/msg/mission_ref.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
@@ -69,6 +70,7 @@ public:
         ratesp_0_pub_ = this->create_publisher<VehicleRatesSetpoint>("/dsls_controller/rate_setpoint_0", 10);
         ratesp_1_pub_ = this->create_publisher<VehicleRatesSetpoint>("/dsls_controller/rate_setpoint_1", 10);
         lpf_data_pub_ = this->create_publisher<LPFData>("/dsls_controller/lpf_data", 10);
+        mission_ref_pub_ = this->create_publisher<MissionRef>("/dsls_controller/mission_ref", 10);
 
         // initialize subscribers
         // gazebo
@@ -245,6 +247,7 @@ private:
     rclcpp::Publisher<VehicleRatesSetpoint>::SharedPtr ratesp_0_pub_;
     rclcpp::Publisher<VehicleRatesSetpoint>::SharedPtr ratesp_1_pub_;
     rclcpp::Publisher<LPFData>::SharedPtr lpf_data_pub_;
+    rclcpp::Publisher<MissionRef>::SharedPtr mission_ref_pub_;
 
     // subscribers
     rclcpp::Subscription<gazebo_msgs::msg::LinkStates>::SharedPtr gazebo_state_sub_;
@@ -363,7 +366,7 @@ private:
     double c_3_ = -2.0;
     double ph_3_ = 0;
     double pend_angle_deg_ = 90; // deprecated
-    double q_1_3_r_ = 0.7406322196911044; //sqrt(2)/2;
+    double q_1_3_r_ = 0.7406322196911044; //sqrt(2)/2; 
     double q_2_1_r_ = 0;
     double q_2_2_r_ = -0.6717825272800765; //-sqrt(2)/2;
     double dsls_dea_ref_temp_[15];
@@ -371,7 +374,7 @@ private:
     /* Gains */
     double dea_k1_[4] = {31.6228,   37.4556,   20.6010,    6.4963};
     double dea_k2_[4] = {31.6228,   37.4556,   20.6010,    6.4963};
-    double dea_k3_[4] = {24.0000,   50.0000,   35.0000,   10.0000}; //{24.0000,   50.0000,   35.0000,   10.0000}
+    double dea_k3_[4] = {24.0000,   50.0000,   35.0000,   10.0000}; 
     double dea_k4_[4] = {2.0000,    3.0000,         0,         0};
     double dea_k5_[4] = {2.0000,    3.0000,         0,         0};
     double dea_k6_[4] = {2.0000,    3.0000,         0,         0};
@@ -389,6 +392,7 @@ private:
     DSlsState state18_;
     DEAState dea_xi4_;
     LPFData lpf_data_;
+    MissionRef mission_ref_;
 
     // methods
 	void publish_trajectory_setpoint();
@@ -550,7 +554,8 @@ void DSLS_DEA::pubDebugData(){
     dea_force_1_pub_->publish(dea_force_1_);    
     ratesp_0_pub_->publish(rate_dea_0_);
     ratesp_1_pub_->publish(rate_dea_1_);
-    //lpf_data_pub_->publish(lpf_data_);   
+    //lpf_data_pub_->publish(lpf_data_); 
+    mission_ref_pub_->publish(mission_ref_);  
 }
 
 void DSLS_DEA::executeMission(void) {
@@ -714,7 +719,14 @@ int DSLS_DEA::applyDSLSDEAController(DSlsState state18, DEAState &dea_xi4, doubl
                     0.0, 0.0, -2.0, 0.0,
                     q_1_3_r_, q_2_1_r_, q_2_2_r_ };
     }
+    // mission reference
+    // format: ref = r * sin(fr * t + ph) + c
+    mission_ref_.header.stamp = this->get_clock()->now();
+    mission_ref_.dea_ref[0] = dea_ref[0]*sin(dea_ref[1]*t + dea_ref[3]) + dea_ref[2];
+    mission_ref_.dea_ref[1] = dea_ref[4]*sin(dea_ref[5]*t + dea_ref[7]) + dea_ref[6];
+    mission_ref_.dea_ref[2] = dea_ref[8]*sin(dea_ref[9]*t + dea_ref[11]) + dea_ref[10];
 
+    // apply controller
     DSLSDEAController(state22, dea_k_, dea_param_, dea_ref.data(), t, F1, F2, xi_dot);
     dea_xi4.header.stamp = this->get_clock()->now();
     for(int i = 0; i < 4; i ++){
@@ -842,7 +854,7 @@ void DSLS_DEA::force_rate_convert(double controller_output[3], VehicleAttitudeSe
     rate.pitch = static_cast<float>(body_rate_frd(1));
     rate.yaw   = static_cast<float>(body_rate_frd(2));
     
-    // /* Thrust */ 
+    /* Thrust */ 
     double thrust = std::max(0.0, std::min(1.0, ref_thrust / (max_thrust_force_) + norm_thrust_offset_));
     attitude.thrust_body[0] = 0.0f;
     attitude.thrust_body[1] = 0.0f;

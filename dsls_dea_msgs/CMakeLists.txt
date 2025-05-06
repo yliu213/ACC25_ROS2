@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DSlsState.msg"
   "msg/DEAState.msg"
   "msg/LPFData.msg"
+  "msg/MissionRef.msg"
   DEPENDENCIES geometry_msgs std_msgs 
 )
 

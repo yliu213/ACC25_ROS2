@@ -23,7 +23,6 @@
 #include "dsls_dea/DSLSDEAController.h" // MATLAB generated
 #include "dsls_dea_msgs/msg/d_sls_state.hpp" // for custom msg
 #include "dsls_dea_msgs/msg/dea_state.hpp"
-#include "dsls_dea_msgs/msg/lpf_data.hpp"
 #include "dsls_dea_msgs/msg/mission_ref.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
@@ -69,7 +68,6 @@ public:
         dea_force_1_pub_ = this->create_publisher<Vector3Stamped>("/dsls_controller/dea_force_1", 10);
         ratesp_0_pub_ = this->create_publisher<VehicleRatesSetpoint>("/dsls_controller/rate_setpoint_0", 10);
         ratesp_1_pub_ = this->create_publisher<VehicleRatesSetpoint>("/dsls_controller/rate_setpoint_1", 10);
-        lpf_data_pub_ = this->create_publisher<LPFData>("/dsls_controller/lpf_data", 10);
         mission_ref_pub_ = this->create_publisher<MissionRef>("/dsls_controller/mission_ref", 10);
 
         // initialize subscribers
@@ -178,7 +176,7 @@ public:
                 mode_msg.timestamp = this->get_clock()->now().nanoseconds()/1000;
                 offboard0_control_mode_publisher_->publish(mode_msg);
                 offboard1_control_mode_publisher_->publish(mode_msg);
-                this-> dea_enabled_ = true; // set manually, o.w. bugs
+                this-> dea_enabled_ = true; 
                 break;
             }
             }
@@ -223,7 +221,6 @@ private:
     // ros2 timer and time
 	rclcpp::TimerBase::SharedPtr timer_;
     std::atomic<uint64_t> timestamp_;   //!< common synced timestamped
-    double gazebo_last_called_;
     double dea_start_time_; 
     double dea_end_time_;
     double controller_last_called_; 
@@ -246,7 +243,6 @@ private:
     rclcpp::Publisher<Vector3Stamped>::SharedPtr dea_force_1_pub_;
     rclcpp::Publisher<VehicleRatesSetpoint>::SharedPtr ratesp_0_pub_;
     rclcpp::Publisher<VehicleRatesSetpoint>::SharedPtr ratesp_1_pub_;
-    rclcpp::Publisher<LPFData>::SharedPtr lpf_data_pub_;
     rclcpp::Publisher<MissionRef>::SharedPtr mission_ref_pub_;
 
     // subscribers
@@ -265,20 +261,18 @@ private:
     bool traj_tracking_enabled_ = false;
     bool mission_enabled_ = false;
     bool mission_initialized_ = false;
-    bool mission_start_ = false;
-    bool mission_ref_updated_ = false;
     int mission_stage_ = 0;
     double mission_time_last_;
-    double dea_mission_setpoint0_[6] = {0.0, 0.0, -2.0, q_1_3_r_, q_2_1_r_, q_2_2_r_}; 
-    double dea_mission_setpoint1_[6] = {1.0, 0.0, -2.0, q_1_3_r_, q_2_1_r_, q_2_2_r_};
-    double dea_mission_setpoint2_[6] = {0.0, 1.0, -2.0, q_1_3_r_, q_2_1_r_, q_2_2_r_};
-    double dea_mission_setpoint3_[6] = {0.0, 0.0, -2.5, q_1_3_r_, q_2_1_r_, q_2_2_r_};
-    double dea_mission_trajectory_[15] = {
-        1.0, 0.5, 0.0, 0.0,
-        1.0, 0.5, 0.0, PI/2,
-        0.0, 0.0, -2.0, 0.0,
-        q_1_3_r_, q_2_1_r_, q_2_2_r_
-    };
+    // double dea_mission_setpoint0_[6] = {0.0, 0.0, -2.0, q_1_3_r_, q_2_1_r_, q_2_2_r_}; 
+    // double dea_mission_setpoint1_[6] = {1.0, 0.0, -2.0, q_1_3_r_, q_2_1_r_, q_2_2_r_};
+    // double dea_mission_setpoint2_[6] = {0.0, 1.0, -2.0, q_1_3_r_, q_2_1_r_, q_2_2_r_};
+    // double dea_mission_setpoint3_[6] = {0.0, 0.0, -2.5, q_1_3_r_, q_2_1_r_, q_2_2_r_};
+    // double dea_mission_trajectory_[15] = {
+    //     1.0, 0.5, 0.0, 0.0,
+    //     1.0, 0.5, 0.0, PI/2,
+    //     0.0, 0.0, -2.0, 0.0,
+    //     q_1_3_r_, q_2_1_r_, q_2_2_r_
+    // };
 
     // gazebo index matching
     bool gazebo_link_name_matched_ = false;
@@ -301,39 +295,31 @@ private:
 
     // geometry_msgs
     /* uav0 */
-    PoseStamped uav0_pose_, uav0_pose_last_;
-    TwistStamped uav0_twist_, uav0_twist_last_;
+    PoseStamped uav0_pose_;
+    TwistStamped uav0_twist_;
     /* uav1 */
-    PoseStamped uav1_pose_, uav1_pose_last_;
-    TwistStamped uav1_twist_, uav1_twist_last_;
+    PoseStamped uav1_pose_;
+    TwistStamped uav1_twist_;
     /* load */
-    PoseStamped load_pose_, load_pose_last_;
+    PoseStamped load_pose_;
     TwistStamped load_twist_;
     /* pend0 */
-    Vector3 pend0_q_, pend0_q_last_, pend0_q_last_2_;
-    Vector3 pend0_q_dot_, pend0_q_dot_last_, pend0_q_dot_last_2_;
-    Vector3 pend0_q_dot_lpf1_, pend0_q_dot_lpf1_last_, pend0_q_dot_lpf1_last_2_;
-    Vector3 pend0_q_dot_lpf2_, pend0_q_dot_lpf2_last_, pend0_q_dot_lpf2_last_2_;
+    Vector3 pend0_q_, pend0_q_last_;
+    Vector3 pend0_q_dot_, pend0_q_dot_last_;
     Vector3 pend0_omega_;
     /* pend1 */
-    Vector3 pend1_q_, pend1_q_last_, pend1_q_last_2_;
-    Vector3 pend1_q_dot_, pend1_q_dot_last_, pend1_q_dot_last_2_;
-    Vector3 pend1_q_dot_lpf1_, pend1_q_dot_lpf1_last_, pend1_q_dot_lpf1_last_2_;
-    Vector3 pend1_q_dot_lpf2_, pend1_q_dot_lpf2_last_, pend1_q_dot_lpf2_last_2_;
+    Vector3 pend1_q_, pend1_q_last_;
+    Vector3 pend1_q_dot_, pend1_q_dot_last_;
     Vector3 pend1_omega_;
     /* DEA Controller Output Force */
     Vector3Stamped dea_force_0_;
     Vector3Stamped dea_force_1_;
 
     // bools
-    bool use_ned_frame_ = false; //false
-    bool gazebo_omega_enabled_ = false;
     bool dea_enabled_ = false; //false
     bool dea_last_status_ = false;
-    bool open_loop_ctrl_enabled_ = false;
     bool param_tuning_enabled_ = false;
     bool lpf_debug_enabled_ = false;
-    bool time_sync_debug_enabled_ = false;
     bool force_clip_enabled_ = false;
     bool dea_preintegrate_enabled_ = false;
 
@@ -365,11 +351,9 @@ private:
     double fr_3_ = 0.0;
     double c_3_ = -2.0;
     double ph_3_ = 0;
-    double pend_angle_deg_ = 90; // deprecated
     double q_1_3_r_ = 0.7406322196911044; //sqrt(2)/2; 
     double q_2_1_r_ = 0;
     double q_2_2_r_ = -0.6717825272800765; //-sqrt(2)/2;
-    double dsls_dea_ref_temp_[15];
 
     /* Gains */
     double dea_k1_[4] = {31.6228,   37.4556,   20.6010,    6.4963};
@@ -391,16 +375,13 @@ private:
     // custom msgs
     DSlsState state18_;
     DEAState dea_xi4_;
-    LPFData lpf_data_;
     MissionRef mission_ref_;
 
     // methods
 	void publish_trajectory_setpoint();
 	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0, uint8_t target_sys_id = 1);
     void gazeboCb(const gazebo_msgs::msg::LinkStates::SharedPtr msg);
-    int enu2ned(void);
-    int enu2esd(void);
-    int applyOpenLoopController(void);
+    void enu2esd(void);
     int applyDSLSDEAController(
         DSlsState state18, 
         DEAState &dea_xi4, 
@@ -493,8 +474,7 @@ void DSLS_DEA::gazeboCb(const gazebo_msgs::msg::LinkStates::SharedPtr msg){
     load_twist_.twist = msg -> twist[load_link_index_];
 
     // coordinate transform
-    if(use_ned_frame_) enu2ned();
-    else enu2esd();
+    enu2esd();
     
     // q1
     pend0_q_.x = (load_pose_.pose.position.x - uav0_pose_.pose.position.x);
@@ -512,19 +492,6 @@ void DSLS_DEA::gazeboCb(const gazebo_msgs::msg::LinkStates::SharedPtr msg){
     pend1_q_.x = pend1_q_.x / q1_norm;
     pend1_q_.y = pend1_q_.y / q1_norm;
     pend1_q_.z = pend1_q_.z / q1_norm;
-
-    double diff_time;
-    diff_time = (this->get_clock()->now().seconds() - gazebo_last_called_); 
-    gazebo_last_called_ = this->get_clock()->now().seconds();
-
-    if(gazebo_omega_enabled_){
-        pend0_omega_.x = (msg -> twist[pend0_link_index_]).angular.x;
-        pend0_omega_.y = -(msg -> twist[pend0_link_index_]).angular.y;
-        pend0_omega_.z = -(msg -> twist[pend0_link_index_]).angular.z;
-        pend1_omega_.x = (msg -> twist[pend1_link_index_]).angular.x;
-        pend1_omega_.y = -(msg -> twist[pend1_link_index_]).angular.y;
-        pend1_omega_.z = -(msg -> twist[pend1_link_index_]).angular.z;
-    } 
 
     if(dea_enabled_ && dea_enabled_ != dea_last_status_) {
         dea_start_time_ = this->get_clock()->now().seconds();
@@ -554,7 +521,6 @@ void DSLS_DEA::pubDebugData(){
     dea_force_1_pub_->publish(dea_force_1_);    
     ratesp_0_pub_->publish(rate_dea_0_);
     ratesp_1_pub_->publish(rate_dea_1_);
-    //lpf_data_pub_->publish(lpf_data_); 
     mission_ref_pub_->publish(mission_ref_);  
 }
 
@@ -698,8 +664,8 @@ int DSLS_DEA::applyDSLSDEAController(DSlsState state18, DEAState &dea_xi4, doubl
     /* Getting Full State */
     double state22[22] = {};
     for(int i = 0; i < 22; i++){
-        if(i < 18) state22[i] = state18.state18[i]; //state18.state18[i]
-        else if(i < 22) state22[i] = dea_xi4.dea_xi4[i-18]; //dea_xi4.dea_xi4[i-18]
+        if(i < 18) state22[i] = state18.state18[i]; 
+        else if(i < 22) state22[i] = dea_xi4.dea_xi4[i-18]; 
     }
 
     /* Apply Controller */
@@ -769,9 +735,6 @@ int DSLS_DEA::applyDSLSDEAController(DSlsState state18, DEAState &dea_xi4, doubl
 }
 
 void DSLS_DEA::force_rate_convert(double controller_output[3], VehicleAttitudeSetpoint &attitude, VehicleRatesSetpoint &rate,int uav){
-    double thrust_norm_hover = 0.538;
-    double thrust_coeff = 100;  
-    double thrust_0 = 1.55*9.81;
     double max_force = (uav_mass_ + 0.5 * load_mass_) * max_fb_acc_ * 2; //
     double force_norm = sqrt(controller_output[0]*controller_output[0] + controller_output[1]*controller_output[1] + controller_output[2]*controller_output[2]);
 
@@ -784,14 +747,11 @@ void DSLS_DEA::force_rate_convert(double controller_output[3], VehicleAttitudeSe
     tf2::Quaternion quat_tf;
     tf2::fromMsg(quat_msg, quat_tf);
     tf2::Matrix3x3(quat_tf).getRPY(curr_roll, curr_pitch, curr_yaw);
-    // bool curr_rpy_debug_enabled = false;
-    // if(curr_rpy_debug_enabled) ROS_INFO_STREAM("Current RPY:" << curr_roll << " " << curr_pitch << " " << curr_yaw);
 
     // Clip reference force
     if(force_norm > max_force && force_clip_enabled_){
         for(int i=0; i<3; i++) controller_output[i] *= max_force / force_norm;
     }
-
 
     // Getting ENU Attitude Target (mavros will do the conversion to NED)
     attitude.timestamp = this->get_clock()->now().nanoseconds()/1000;
@@ -806,8 +766,6 @@ void DSLS_DEA::force_rate_convert(double controller_output[3], VehicleAttitudeSe
     if(std::abs(ref_pitch) > max_tilt_angle_) ref_pitch = std::copysign(ref_pitch, max_tilt_angle_);
 
     tf2::Quaternion attitude_target_q;
-    //bool ref_rpy_debug_enabled = false;
-    //if(ref_rpy_debug_enabled) ROS_INFO_STREAM("Target RPY:" << ref_roll << " " << ref_pitch << " " << ref_yaw);
     attitude_target_q.setRPY(ref_roll, ref_pitch, ref_yaw);
     // attitude.orientation.x = attitude_target_q.getX();
     // attitude.orientation.y = attitude_target_q.getY();
@@ -934,40 +892,7 @@ double DSLS_DEA::applyFiniteDiff(double x, double x_last, double x_dot_last, dou
     }
 }
 
-int DSLS_DEA::applyOpenLoopController(void){
-    
-    return 0;
-}
-
-int DSLS_DEA::enu2ned(void){
-    uav0_pose_.pose.position.x = uav0_pose_.pose.position.y;
-    uav0_pose_.pose.position.y = uav0_pose_.pose.position.x; 
-    uav0_pose_.pose.position.z = -uav0_pose_.pose.position.z; 
-
-    uav1_pose_.pose.position.x = uav1_pose_.pose.position.y; 
-    uav1_pose_.pose.position.y = uav1_pose_.pose.position.x; 
-    uav1_pose_.pose.position.z = -uav1_pose_.pose.position.z; 
-
-    uav0_twist_.twist.linear.x = uav0_twist_.twist.linear.y;
-    uav0_twist_.twist.linear.y = uav0_twist_.twist.linear.x;
-    uav0_twist_.twist.linear.z = -uav0_twist_.twist.linear.z;
-
-    uav1_twist_.twist.linear.x = uav1_twist_.twist.linear.y;
-    uav1_twist_.twist.linear.y = uav1_twist_.twist.linear.x;
-    uav1_twist_.twist.linear.z = -uav1_twist_.twist.linear.z;
-
-    load_pose_.pose.position.x = load_pose_.pose.position.y; 
-    load_pose_.pose.position.y = load_pose_.pose.position.x; 
-    load_pose_.pose.position.z = -load_pose_.pose.position.z;    
-
-    load_twist_.twist.linear.x = load_twist_.twist.linear.y;
-    load_twist_.twist.linear.y = load_twist_.twist.linear.x;
-    load_twist_.twist.linear.z = -load_twist_.twist.linear.z;
-
-    return 0;
-}
-
-int DSLS_DEA::enu2esd(void){
+void DSLS_DEA::enu2esd(void){
     uav0_pose_.pose.position.y = -uav0_pose_.pose.position.y; 
     uav0_pose_.pose.position.z = -uav0_pose_.pose.position.z; 
 
@@ -985,8 +910,6 @@ int DSLS_DEA::enu2esd(void){
 
     load_twist_.twist.linear.y = -load_twist_.twist.linear.y;
     load_twist_.twist.linear.z = -load_twist_.twist.linear.z;
-
-    return 0;
 }
 
 int main(int argc, char *argv[])

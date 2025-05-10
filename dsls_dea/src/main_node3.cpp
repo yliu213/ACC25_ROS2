@@ -21,6 +21,7 @@
 #include <Eigen/Dense>
 #include "dsls_dea/common.h"
 #include "dsls_dea/DSLSDEAController.h" // MATLAB generated
+#include "dsls_dea/DSL.h" // MATLAB generated
 #include "dsls_dea_msgs/msg/d_sls_state.hpp" // for custom msg
 #include "dsls_dea_msgs/msg/dea_state.hpp"
 #include "dsls_dea_msgs/msg/lpf_data.hpp"
@@ -728,8 +729,12 @@ int DSLS_DEA::applyDSLSDEAController(DSlsState state18, DEAState &dea_xi4, doubl
     mission_ref_.dea_ref[1] = dea_ref[4]*sin(dea_ref[5]*t + dea_ref[7]) + dea_ref[6];
     mission_ref_.dea_ref[2] = dea_ref[8]*sin(dea_ref[9]*t + dea_ref[11]) + dea_ref[10];
 
-    // apply controller
-    DSLSDEAController(state22, dea_k_, dea_param_, dea_ref.data(), t, F1, F2, xi_dot);
+    // apply mohamed'scontroller
+    // DSLSDEAController(state22, dea_k_, dea_param_, dea_ref.data(), t, F1, F2, xi_dot);
+
+    // apply nardos's controller
+    DSL(state22, dea_k_, dea_param_, dea_ref.data(), t, F1, F2, xi_dot);
+
     dea_xi4.header.stamp = this->get_clock()->now();
     for(int i = 0; i < 4; i ++){
         dea_xi4.dea_xi_dot4[i] = xi_dot[i];

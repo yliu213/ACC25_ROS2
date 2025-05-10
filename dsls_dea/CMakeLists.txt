@@ -17,14 +17,20 @@ find_package(tf2_geometry_msgs REQUIRED)
 add_executable(dsls_dea_exe
   src/main_node3.cpp 
 
+  # MATLAB generated files from nardos
+  src/DSL/DSL.cpp
+  src/DSL/rt_nonfinite.cpp
+  src/DSL/rtGetInf.cpp
+  src/DSL/rtGetNaN.cpp
+
   # for inner loop controller when using main_node2.cpp
   # src/nonlinear_attitude_control.cpp
 
-  # MATLAB generated files
-  src/DSLSDEAController/DSLSDEAController.cpp
-  src/DSLSDEAController/rt_nonfinite.cpp
-  src/DSLSDEAController/rtGetInf.cpp
-  src/DSLSDEAController/rtGetNaN.cpp
+  # MATLAB generated files from mohamed
+  # src/DSLSDEAController/DSLSDEAController.cpp
+  # src/DSLSDEAController/rt_nonfinite.cpp
+  # src/DSLSDEAController/rtGetInf.cpp
+  # src/DSLSDEAController/rtGetNaN.cpp
 )
 
 ament_target_dependencies(dsls_dea_exe 

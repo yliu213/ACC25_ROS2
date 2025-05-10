@@ -172,6 +172,7 @@ ros2 launch dsls_dea init2.launch.py
 ```  
 And click the start icon in gazebo when the link attach process is finished. If process are always waiting, ctrl + C to quit the process and retype the command. 
 ### 2. Run QGroundControl
+* To generate the same results in project report, load param_SITL_664project.params in this repository in QGroundControl.
 
 ### 3. Launch SITL controller launch script
 In a new terminal:

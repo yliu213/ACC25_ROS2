@@ -135,7 +135,7 @@ git clone https://github.com/PX4/px4_ros_com.git
 cd ..
 colcon build
 ```
-The version of px4_msgs package MUST match the version of px4 version.
+The version of px4_msgs package MUST match the version of px4 version. Otherwise the program will experience some unexpected behavior.
 
 ### 6. Modify /.bashrc
 ```

@@ -130,11 +130,12 @@ If build error about px4_ros_com and px4_msgs, do:
 mkdir -p ros2_ws/src
 cd ros2_ws/src  
 rm -rf px4_ros_com px4_msgs
-git clone https://github.com/PX4/px4_msgs.git 
+git clone -b release/1.15 https://github.com/PX4/px4_msgs.git
 git clone https://github.com/PX4/px4_ros_com.git 
 cd ..
 colcon build
 ```
+The version of px4_msgs package MUST match the version of px4 version.
 
 ### 6. Modify /.bashrc
 ```

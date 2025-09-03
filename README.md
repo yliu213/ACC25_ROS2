@@ -34,6 +34,7 @@ sudo apt install aptitude
 sudo aptitude install gazebo libgazebo11 libgazebo-dev
 make px4_sitl_default gazebo-classic
 ```
+The above cmd may need to run outside PX4 folder in order to work properly.
 
 ### 2. Install QGroundControl
 Setup mirror network in your computer as follows:
